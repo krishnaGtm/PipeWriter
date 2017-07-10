@@ -6,11 +6,17 @@ using System.Linq;
 using netDxf;
 using netDxf.Entities;
 using netDxf.Tables;
-
+using MathNet.Numerics;
+using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Double;
+using System.Drawing;
 namespace PipeWriter
 {
+    
     public class DxfFile
     {
+        Vector2 v1 = new Vector2(-3,0);
+        Vector2 v2 = new Vector2(3, 0);
         /// <summary>
         /// Generates the dxf file according to passed product details.
         /// </summary>
@@ -239,6 +245,41 @@ namespace PipeWriter
         }
 
 
+        public void GenerateDXFBLocks(Product productDetails, string fileName, string outputFilePath)
+        {
+            DxfDocument dxf = new DxfDocument();
+            Layer l = new Layer("test123");
+            var block = new netDxf.Blocks.Block("test");
+            Line line = new Line();
+            line.Linetype = Linetype.Dashed;
+            line.StartPoint = new Vector3(10, 10, 0);
+            line.EndPoint = new Vector3(110, 10, 0);            
+            line.Color = AciColor.Blue;
+            block.Entities.Add(line);
+
+
+            Line line2 = new Line();
+            line2.Linetype = Linetype.Continuous;
+            line2.StartPoint = new Vector3(110, 20, 0);
+            line2.EndPoint = new Vector3(200, 20, 0);
+            line2.Color = AciColor.Blue;
+            block.Entities.Add(line2);
+
+            block.Origin = new Vector3(0, 0, 0);
+            block.Layer = l;
+            dxf.Save(Path.Combine(outputFilePath, string.Concat(fileName, ".dxf")));
+
+            //var doc1 = DxfDocument.Load(@"E:\krishna\test7.dxf");
+            //foreach(var _item in doc1.Blocks)
+            //{
+
+            //}
+            //foreach(var _item in doc1.Lines)
+            //{
+
+            //}
+        }
+
         public void GenerateDXF(Product productDetails, string fileName, string outputFilePath)
         {
             //call validation
@@ -268,6 +309,12 @@ namespace PipeWriter
                     //define prevObject as null for first time.
                     var entityObjectCollection = new List<EntityObject>();
                     EntityObject previousObject = null;
+
+                    AddTestControl(dxf);
+
+
+
+
                     for (int i = 0; i < sequenceItens.Count; i++)
                     {
                         var layer = AddLayer("Layer" + i);
@@ -356,11 +403,32 @@ namespace PipeWriter
 
         }
 
-        private void drawScale(List<EntityObject> entityObjectCollection)
+        private void AddTestControl(DxfDocument dxf)
         {
-            //throw new NotImplementedException();
+            Layer lyr = new Layer("Layer-1");
+            Line l = new Line();
+            l.StartPoint = new Vector3(-3, 0, 0);
+            l.EndPoint = new Vector3(3, 0, 0);
+            l.IsVisible = true;
+            l.Layer = lyr;
+            dxf.AddEntity(l);
+
         }
 
+        private void RotateEntity(List<EntityObject> entityObjectCollection)
+        {
+
+            //throw new NotImplementedException();
+            DxfDocument doc = DxfDocument.Load(@"E:\krishna\test1234.dxf");
+            var dimensions = doc.Dimensions;
+        }
+        public void RotateEntity()
+        {
+
+            //throw new NotImplementedException();
+            DxfDocument doc = DxfDocument.Load(@"E:\krishna\test1234.dxf");
+            var dimensions = doc.Viewport;
+        }
 
 
         /// <summary>
@@ -379,11 +447,150 @@ namespace PipeWriter
             ProcessStartInfo startInfo = new ProcessStartInfo();
 
             process.StartInfo.FileName = programPath;
-            process.StartInfo.Arguments = @"/r /p 3 /ad /b 7 /a -2 /f " + (int)outPutFileFormat + " " + dxfFilePath + "";
+            //process.StartInfo.Arguments = @"/r /p 3 /ad /b 7 /a -2 /f " + (int)outPutFileFormat + " " + dxfFilePath + "";
+            process.StartInfo.Arguments = @"/r /ls /info /p 3 /ad /b 7 /a -2 /f " + (int)outPutFileFormat + " " + dxfFilePath + "";
 
             process.Start();
 
             process.WaitForExit();
+        }
+
+        public Vector2 GetPointForDXF(Vector2 originalstartA, Vector2 originalEndB, string originalDXF, Vector2 startpointC)
+        {
+            //getTransformationMatraix();
+            //Coordinate system of SVC start from top left corner.
+            var quadrant = 0;
+
+            if(startpointC.X >= originalstartA.X && startpointC.Y <= originalstartA.Y)
+            {
+                quadrant = 1;
+            }
+            else if (startpointC.X <= originalstartA.X && startpointC.Y <= originalstartA.Y)
+            {
+                quadrant = 2;
+            }
+            else if (startpointC.X <= originalstartA.X && startpointC.Y >= originalstartA.Y)
+            {
+                quadrant = 3;
+            }
+            else if (startpointC.X >= originalstartA.X && startpointC.Y >= originalstartA.Y)
+            {
+                quadrant = 4;
+            }
+            //get length of all sides by creating triangle with dummy line we created with reference to startpointC
+            var AC = Math.Sqrt(((originalstartA.X - startpointC.X) * (originalstartA.X - startpointC.X)) + ((originalstartA.Y - startpointC.Y) * (originalstartA.Y - startpointC.Y)));
+            var BC = Math.Sqrt(((originalEndB.X - startpointC.X) * (originalEndB.X - startpointC.X)) + ((originalEndB.Y - startpointC.Y) * (originalEndB.Y - startpointC.Y)));
+            var AB = Math.Sqrt(((originalstartA.X - originalEndB.X) * (originalstartA.X - originalEndB.X)) + ((originalstartA.Y - originalEndB.Y) * (originalstartA.Y - originalEndB.Y)));
+            //Apply cosine rule for triangle law with ourDummy line to startPoint to calcuate relative point that need to be created for our original dxfFile.
+            var anglea = Math.Acos(((AC * AC) + (BC * BC) - (AB * AB)) / (2 * BC * AC)); 
+            var angleb = Math.Acos(((AB * AB) + (BC * BC) - (AC * AC)) / (2 * AB * BC)); 
+            var anglec = Math.Acos(((AB * AB) + (AC * AC) - (BC * BC)) / (2 * AB * AC));
+
+
+            //apply sine rule for triangle to find lenght of sides to triangle on original dxf.
+            var startPointDXF = new Vector2(0, 0);
+            var endPointDXF = new Vector2(3, 0);
+            var AB1 = Math.Sqrt(((startPointDXF.X - endPointDXF.X) * (startPointDXF.X - endPointDXF.X)) + ((startPointDXF.Y - endPointDXF.Y) * (startPointDXF.Y - endPointDXF.Y)));
+            //var AB1 = Math.Sqrt(Math.Pow((startPointDXF.X - endPointDXF.X), 2) + Math.Pow((startPointDXF.Y - endPointDXF.Y), 2));
+            
+            var AC1 = AB1 * Math.Sin(angleb) / Math.Sin(anglea);
+
+            var PointInDxf = new Vector2(0, 0);
+            //x1 = x0 + cos(angle) * length    -- in this case length is AC1
+            //y1 = y0 + sin(angle) * length    -- in this case length is AC1
+            if (quadrant == 1)
+            {
+                PointInDxf.X = startPointDXF.X + (Math.Cos(anglec) * AC1);
+                PointInDxf.Y = startPointDXF.Y + (Math.Sin(anglec) * AC1);
+            }
+            else if (quadrant == 2)
+            {
+                //PointInDxf.X = startPointDXF.X + (Math.Cos((anglec + 90) * Math.PI / 180) * AC1);
+                //PointInDxf.Y = startPointDXF.Y + (Math.Sin((anglec + 90) * Math.PI / 180) * AC1);
+                PointInDxf.X = startPointDXF.X + (Math.Cos((anglec + (Math.PI / 2d)) ) * AC1);
+                PointInDxf.Y = startPointDXF.Y + (Math.Sin((anglec + (Math.PI / 2d)) ) * AC1);
+            }
+            else if (quadrant == 3)
+            {
+                //PointInDxf.X = startPointDXF.X + (Math.Cos((270 - anglec) * Math.PI / 180) * AC1);
+                //PointInDxf.Y = startPointDXF.Y + (Math.Sin((270 - anglec) * Math.PI / 180) * AC1);
+                PointInDxf.X = startPointDXF.X + (Math.Cos((3d * Math.PI / 2d) - anglec) * AC1);
+                PointInDxf.Y = startPointDXF.Y + (Math.Sin((3d * Math.PI / 2d) - anglec) * AC1);
+            }
+            else if (quadrant == 4)
+            {
+                PointInDxf.X = startPointDXF.X + (Math.Cos((2d* Math.PI) - anglec) * AC1);
+                PointInDxf.Y = startPointDXF.Y + (Math.Sin((2d * Math.PI) - anglec) * AC1);
+            }
+            return PointInDxf;
+        }
+
+        public void getTransformationMatraix()
+        {
+
+            
+
+
+
+
+            /*
+            //define 3X3 matrix
+            double a = 0, b=0, c=0, d=0, e=0, f=0;
+            var matrixT = DenseMatrix.OfArray(new double[,]
+            {
+                {a,b,c },
+                {d,e,f },
+                {0,0,1 }
+            });
+            //var matrixX = DenseMatrix.OfArray(new double[,]
+            //{
+            //    {1,2 },
+            //    {2,1 },
+            //    {3,0 }
+            //});
+            //var matrixD = DenseMatrix.OfArray(new double[,]
+            //{
+            //    {1,-2, },
+            //    {2,-3 },
+            //    {3,-4 }
+            //});
+            var matrixX = DenseMatrix.OfArray(new double[,]
+            {
+                {1,2 },
+                {2,1 }
+            });
+            var matrixD = DenseMatrix.OfArray(new double[,]
+            {
+                {1,2 },
+                {-2,-3 }
+            });
+            var res = matrixD * matrixX;
+            var test = res;
+            //var matrixX = DenseMatrix.OfArray(new double[,]
+            //{
+            //    {1},
+            //    {2 },
+            //    {1 }
+            //});
+            //var matrixT1 = DenseMatrix.OfArray(new double[,]
+            //{
+            //    {1,2,5},
+            //    {3,4,6 },
+            //    {0,0,1 }
+            //});
+            //var res = matrixT1 * matrixX;
+            //var test = res;
+            //var matrixT1 = matrixX.Transpose() * matrixD;
+            //var test = matrixT1;
+            //var matrixT = MathNet.Numerics.LinearAlgebra.Double.Matrix.Build.DenseOfArray({ { a,b,c },{ d,e,f },{ 0,0,1 } })
+
+            //var matrixT = DenseMatrix.OfArray(new double[,] {
+            //    {1,1,1,1},
+            //    {1,2,3,4},
+            //    {4,3,2,1}});
+
+            */
+
         }
 
         public List<EntityObject> AddText(List<EntityObject> list, Product productDetails)

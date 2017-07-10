@@ -1,4 +1,5 @@
-﻿using PipeWriter;
+﻿using netDxf;
+using PipeWriter;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -41,16 +42,20 @@ namespace PipeWriterDesktop
 
         private void button2_Click(object sender, EventArgs e)
         {
+
             //List<string> fileLocation = new List<string>();
             //fileLocation.Add(@"E:\krishna\test1.dxf");
             //fileLocation.Add(@"E:\krishna\test3.dxf");
             //DxfFile file = new DxfFile();
             //file.MergeDXFFiles(fileLocation);
-
-
-
             DxfFile file = new DxfFile();
-            file.AddScale(@"E:\krishna\test1.dxf", -10,-10, 10);
+            //file.getTransformationMatraix();
+            //file.GetPointForDXF(new Vector2(1, 2), new Vector2(7, 2), "test", new Vector2(-5,-4));
+            //file.GetPointForDXF(new Vector2(85.59, 346.24), new Vector2(106.95, 346.24), "test", new Vector2(85.59,1058.39));
+
+
+            //DxfFile file = new DxfFile();
+            //file.AddScale(@"E:\krishna\test1.dxf", -10,-10, 10);
 
             #region new
 
@@ -60,27 +65,31 @@ namespace PipeWriterDesktop
             if(res== DialogResult.OK)
             {
                 filename = openFileDialog1.FileName;
-            }
-            //string filename1 = "C:\\Users\\krishna\\Desktop\\InputFiles\\" + filename;
-            Product p = new Product();
-            XmlDocument xdoc = new XmlDocument();
-            //xdoc.Load(@"C:\Users\krishna\Desktop\InputFiles\demo1.xml");
-            xdoc.Load(filename);
+                //string filename1 = "C:\\Users\\krishna\\Desktop\\InputFiles\\" + filename;
+                Product p = new Product();
+                XmlDocument xdoc = new XmlDocument();
+                //xdoc.Load(@"C:\Users\krishna\Desktop\InputFiles\demo1.xml");
+                xdoc.Load(filename);
 
-            XmlSerializer serializer = new XmlSerializer(typeof(Product));
-            using (StringReader reader = new StringReader(xdoc.InnerXml))
-            {
-                
-                p = (Product)(serializer.Deserialize(reader));
+                XmlSerializer serializer = new XmlSerializer(typeof(Product));
+                using (StringReader reader = new StringReader(xdoc.InnerXml))
+                {
+
+                    p = (Product)(serializer.Deserialize(reader));
+                }
+                var x = p;
+                DxfFile service = new DxfFile();
+                service.GenerateDXF(p, "test8", "E:\\krishna");
+                //service.GenerateDXFBLocks(p,"test8", "E:\\krishna");
             }
-            var x = p;
-            DxfFile service = new DxfFile();
-            service.GenerateDXF(p, "test6", "E:\\krishna");
+            
             #endregion
+
+            #region old
 
             /*
 
-            #region old 
+             
             Product prod = new Product();
             Parts parts = new Parts();
             //arcs
@@ -145,16 +154,27 @@ namespace PipeWriterDesktop
             //service.GenerateDXF(prod, "test1", "E:\\krishna");
 
 
+            
+            */
             #endregion
-        */
-
 
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
+            //DxfFile file = new DxfFile();
+            //file.RotateEntity();
             //E:\Proj\PipeWriter\acmecad
-            DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\test.dxf", FileFormat.SVG);
+            //DxfDocument doc = DxfDocument.Load(@"E:\krishna\test1.dxf");
+            //netDxf.Entities.Line l = new netDxf.Entities.Line();
+            //l.StartPoint = new Vector3(0, 0, 0);
+            //l.EndPoint = new Vector3(3, 0, 0);
+            //netDxf.Tables.Layer layer = new netDxf.Tables.Layer("Layer-1");
+            //l.Layer = layer;
+            //doc.AddEntity(l);
+            //doc.Save(@"E:\krishna\test1_addedLayer.dxf");
+            //DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\test1.dxf", FileFormat.SVG);
+            DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\test1_addedLayer.dxf", FileFormat.SVG);
         }
     }
 }
