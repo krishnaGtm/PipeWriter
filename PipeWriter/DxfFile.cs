@@ -448,7 +448,7 @@ namespace PipeWriter
 
             process.StartInfo.FileName = programPath;
             //process.StartInfo.Arguments = @"/r /p 3 /ad /b 7 /a -2 /f " + (int)outPutFileFormat + " " + dxfFilePath + "";
-            process.StartInfo.Arguments = @"/r /ls /info /p 3 /ad /b 7 /a -2 /f " + (int)outPutFileFormat + " " + dxfFilePath + "";
+            process.StartInfo.Arguments = @"/r /ls  /p 3 /ad /b 7 /a -2 /f " + (int)outPutFileFormat + " " + dxfFilePath + "";
 
             process.Start();
 
@@ -478,13 +478,14 @@ namespace PipeWriter
                 quadrant = 4;
             }
             //get length of all sides by creating triangle with dummy line we created with reference to startpointC
-            var AC = Math.Sqrt(((originalstartA.X - startpointC.X) * (originalstartA.X - startpointC.X)) + ((originalstartA.Y - startpointC.Y) * (originalstartA.Y - startpointC.Y)));
-            var BC = Math.Sqrt(((originalEndB.X - startpointC.X) * (originalEndB.X - startpointC.X)) + ((originalEndB.Y - startpointC.Y) * (originalEndB.Y - startpointC.Y)));
-            var AB = Math.Sqrt(((originalstartA.X - originalEndB.X) * (originalstartA.X - originalEndB.X)) + ((originalstartA.Y - originalEndB.Y) * (originalstartA.Y - originalEndB.Y)));
+            //instead of getting square root get square value which is used to find angle
+            var ACsquare = ((originalstartA.X - startpointC.X) * (originalstartA.X - startpointC.X)) + ((originalstartA.Y - startpointC.Y) * (originalstartA.Y - startpointC.Y)); //Math.Sqrt(((originalstartA.X - startpointC.X) * (originalstartA.X - startpointC.X)) + ((originalstartA.Y - startpointC.Y) * (originalstartA.Y - startpointC.Y)));
+            var BCsquare = ((originalEndB.X - startpointC.X) * (originalEndB.X - startpointC.X)) + ((originalEndB.Y - startpointC.Y) * (originalEndB.Y - startpointC.Y)); //Math.Sqrt(((originalEndB.X - startpointC.X) * (originalEndB.X - startpointC.X)) + ((originalEndB.Y - startpointC.Y) * (originalEndB.Y - startpointC.Y)));
+            var ABsquare = ((originalstartA.X - originalEndB.X) * (originalstartA.X - originalEndB.X)) + ((originalstartA.Y - originalEndB.Y) * (originalstartA.Y - originalEndB.Y)); //Math.Sqrt(((originalstartA.X - originalEndB.X) * (originalstartA.X - originalEndB.X)) + ((originalstartA.Y - originalEndB.Y) * (originalstartA.Y - originalEndB.Y)));
             //Apply cosine rule for triangle law with ourDummy line to startPoint to calcuate relative point that need to be created for our original dxfFile.
-            var anglea = Math.Acos(((AC * AC) + (BC * BC) - (AB * AB)) / (2 * BC * AC)); 
-            var angleb = Math.Acos(((AB * AB) + (BC * BC) - (AC * AC)) / (2 * AB * BC)); 
-            var anglec = Math.Acos(((AB * AB) + (AC * AC) - (BC * BC)) / (2 * AB * AC));
+            var anglea = Math.Acos(((ABsquare) + (ACsquare) - (BCsquare)) / (2 * Math.Sqrt(ABsquare) * Math.Sqrt(ACsquare))); //Math.Acos(((AC * AC) + (BC * BC) - (AB * AB)) / (2 * BC * AC)); 
+            var angleb = Math.Acos(((ABsquare) + (BCsquare) - (ACsquare)) / (2 * Math.Sqrt(ABsquare) * Math.Sqrt(BCsquare)));
+            var anglec = Math.PI - (anglea + angleb);//Math.Acos(((ACsquare) + (BCsquare) - (ABsquare)) / (2 * Math.Sqrt(BCsquare) * Math.Sqrt(ACsquare))); //Math.Acos(((AB * AB) + (AC * AC) - (BC * BC)) / (2 * AB * AC));
 
 
             //apply sine rule for triangle to find lenght of sides to triangle on original dxf.
@@ -493,7 +494,7 @@ namespace PipeWriter
             var AB1 = Math.Sqrt(((startPointDXF.X - endPointDXF.X) * (startPointDXF.X - endPointDXF.X)) + ((startPointDXF.Y - endPointDXF.Y) * (startPointDXF.Y - endPointDXF.Y)));
             //var AB1 = Math.Sqrt(Math.Pow((startPointDXF.X - endPointDXF.X), 2) + Math.Pow((startPointDXF.Y - endPointDXF.Y), 2));
             
-            var AC1 = AB1 * Math.Sin(angleb) / Math.Sin(anglea);
+            var AC1 = Math.Sin(angleb) * (AB1  / Math.Sin(anglec));
 
             var PointInDxf = new Vector2(0, 0);
             //x1 = x0 + cos(angle) * length    -- in this case length is AC1
