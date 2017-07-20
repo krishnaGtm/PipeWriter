@@ -59,5 +59,16 @@ namespace PipeWriter
 
         [XmlElement("part_list")]
         public Parts PartList { get; set; }
+
+        [XmlElement("startCutAngle")]
+        public double StartCutAngle { get; set; }
+
+        [XmlElement("endCutAngle")]
+        public double EndCutAngle { get; set; }
+        [XmlElement("startAngle_ClockWise")]
+        public bool StartAngleClockWise { get; set; }
+        [XmlElement("EndAngle_ClockWise")]
+        public bool EndAngleClockWise { get; set; }
+
     }
 }

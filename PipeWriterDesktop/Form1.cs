@@ -42,20 +42,17 @@ namespace PipeWriterDesktop
 
         private void button2_Click(object sender, EventArgs e)
         {
-
-            //List<string> fileLocation = new List<string>();
-            //fileLocation.Add(@"E:\krishna\test1.dxf");
-            //fileLocation.Add(@"E:\krishna\test3.dxf");
-            DxfFile file = new DxfFile();
-            //file.MergeDXFFiles(fileLocation);
             //DxfFile file = new DxfFile();
-            //file.getTransformationMatraix();
-            //file.GetPointForDXF(new Vector2(1, 2), new Vector2(7, 2), "test", new Vector2(-5,-4));
-            file.GetPointForDXF(new Vector2(85.59, 346.24), new Vector2(106.95, 346.24), "test", new Vector2(85.59,1058.39));
-
-
-            //DxfFile file = new DxfFile();
-            //file.AddScale(@"E:\krishna\test1.dxf", -10,-10, 10);
+            //MergeContent content = new MergeContent()
+            //{
+            //    FileName = "line.dxf",
+            //    StartPointX = 769,
+            //    StartPointY = 477,
+            //    Rotation = 0
+            //};
+            //List<MergeContent> list = new List<MergeContent>();
+            //list.Add(content);
+            //file.GenerateDXF("ProductDxfFile.dxf", 461.47, 493.37, 769.98, 493.37, list);
 
             #region new
 
@@ -79,7 +76,7 @@ namespace PipeWriterDesktop
                 }
                 var x = p;
                 DxfFile service = new DxfFile();
-                service.GenerateDXF(p, "Arc", "E:\\krishna");
+                service.GenerateDXF(p, "testtest1", "E:\\krishna");
                 //service.GenerateDXFBLocks(p,"test8", "E:\\krishna");
             }
             
@@ -165,19 +162,22 @@ namespace PipeWriterDesktop
             //DxfFile file = new DxfFile();
             //file.RotateEntity();
             //E:\Proj\PipeWriter\acmecad
-            DxfDocument doc = DxfDocument.Load(@"E:\krishna\Arc.dxf");
+            DxfDocument doc = DxfDocument.Load(@"E:\krishna\testtest.dxf");
             netDxf.Entities.Line l = new netDxf.Entities.Line();
             l.StartPoint = new Vector3(0, 0, 0);
-            l.EndPoint = new Vector3(3, 0, 0);
-            l.Color = AciColor.Red;
-            //l.XData.Add(new XData(new netDxf.Tables.ApplicationRegistry("testKrishna")));
+            l.EndPoint = new Vector3(100, 0, 0);
+            l.Color = new AciColor(Color.Ivory); //AciColor.Default;
+            
+            ////l.XData.Add(new XData(new netDxf.Tables.ApplicationRegistry("testKrishna")));
  
-            //netDxf.Tables.Layer layer = new netDxf.Tables.Layer("Layer-1");
-            //l.Layer = layer;
+            ////netDxf.Tables.Layer layer = new netDxf.Tables.Layer("Layer-1");
+            ////l.Layer = layer;
             doc.AddEntity(l);
-            doc.Save(@"E:\krishna\Arc1.dxf");
+            doc.Save(@"E:\krishna\testtest.dxf");
             //DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\test1.dxf", FileFormat.SVG);
-            DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\Arc1.dxf", FileFormat.SVG);
+            DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\testtest.dxf", FileFormat.SVG);
+            doc.RemoveEntity(l);
+            doc.Save(@"E:\krishna\testtest.dxf");
         }
     }
 }

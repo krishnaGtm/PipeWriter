@@ -27,6 +27,9 @@ namespace PipeWriter
         /// <remarks>
         /// If the file with same name already exists it will be replaced.
         /// </remarks>
+        /// 
+        #region previous Method
+        /*
         public static void Generate(Product productDetails, string fileName, string outputFilePath)
         {
             var worngInputs = productDetails.PartList.Arcs.Where(x => x.Radius <= productDetails.ProductWidth / 2).ToList();
@@ -243,53 +246,18 @@ namespace PipeWriter
 
 
         }
-
-
-        public void GenerateDXFBLocks(Product productDetails, string fileName, string outputFilePath)
-        {
-            DxfDocument dxf = new DxfDocument();
-            Layer l = new Layer("test123");
-            var block = new netDxf.Blocks.Block("test");
-            Line line = new Line();
-            line.Linetype = Linetype.Dashed;
-            line.StartPoint = new Vector3(10, 10, 0);
-            line.EndPoint = new Vector3(110, 10, 0);            
-            line.Color = AciColor.Blue;
-            block.Entities.Add(line);
-
-
-            Line line2 = new Line();
-            line2.Linetype = Linetype.Continuous;
-            line2.StartPoint = new Vector3(110, 20, 0);
-            line2.EndPoint = new Vector3(200, 20, 0);
-            line2.Color = AciColor.Blue;
-            block.Entities.Add(line2);
-
-            block.Origin = new Vector3(0, 0, 0);
-            block.Layer = l;
-            dxf.Save(Path.Combine(outputFilePath, string.Concat(fileName, ".dxf")));
-
-            //var doc1 = DxfDocument.Load(@"E:\krishna\test7.dxf");
-            //foreach(var _item in doc1.Blocks)
-            //{
-
-            //}
-            //foreach(var _item in doc1.Lines)
-            //{
-
-            //}
-        }
-
+        */
+        #endregion
         public void GenerateDXF(Product productDetails, string fileName, string outputFilePath)
         {
             //call validation
             if (Validate(productDetails, fileName))
             {
                 //arrance items according to sequence number. sequence number must be unique
-                var sequenceItens = GetItemsSequence(productDetails, fileName);
-                if (sequenceItens.Any())
+                var sequenceItems = GetItemsSequence(productDetails, fileName);
+                if (sequenceItems.Any())
                 {
-                    sequenceItens = sequenceItens.OrderBy(x => x).ToList();
+                    sequenceItems = sequenceItems.OrderBy(x => x).ToList();
                     DxfDocument dxf = new DxfDocument();
                     //create directory if not exists
                     if (!Directory.Exists(outputFilePath))
@@ -310,31 +278,45 @@ namespace PipeWriter
                     var entityObjectCollection = new List<EntityObject>();
                     EntityObject previousObject = null;
 
-                    AddTestControl(dxf);
-
-
-
-
-                    for (int i = 0; i < sequenceItens.Count; i++)
+                    for (int i = 0; i < sequenceItems.Count; i++)
                     {
                         var layer = AddLayer("Layer" + i);
-                        var docLineEntity = productDetails.PartList.Lines.FirstOrDefault(x => x.EntityID == sequenceItens[i]);
+                        var docLineEntity = productDetails.PartList.Lines.FirstOrDefault(x => x.EntityID == sequenceItems[i]);
                         if (docLineEntity != null)
                         {
                             var line = new Line();
                             var isClockWise = false;
                             if(previousObject != null )
                                 if(previousObject.Type == EntityType.Arc)
-                                    isClockWise = productDetails.PartList.Arcs.FirstOrDefault(x => x.EntityID == sequenceItens[i-1]).IsClockwise;
+                                    isClockWise = productDetails.PartList.Arcs.FirstOrDefault(x => x.EntityID == sequenceItems[i-1]).IsClockwise;
                             line = DrawAndAttachLine(previousObject, isClockWise, docLineEntity.Length, productDetails.ProductWidth, layer);
                             //if(productDetails.startangle != 0 && i==0)
                             //    AddStartOrEnd(productDetails.startangle);
                             bool showWidth = false;
+                            bool sAngleClockwise = false;
+                            bool eAngleClockwise = false;
+                            double sCutAngle = 0;
+                            double eCutAngle = 0;
                             if (i == 0)
                                 showWidth = true;
-                            var cutAngle = showWidth == true ? 60 : 0;
+                            else
+                                showWidth = false;
+                            if (i == 0)
+                            {
+                                sCutAngle = productDetails.StartCutAngle;
+                                eCutAngle = 0;
+                                sAngleClockwise = productDetails.StartAngleClockWise;
+                                eAngleClockwise = false;
+                            }                                
+                            else if(i== sequenceItems.Count -1)
+                            {
+                                sCutAngle = 0;
+                                eCutAngle = productDetails.EndCutAngle;
+                                sAngleClockwise = false;
+                                eAngleClockwise = productDetails.EndAngleClockWise;
+                            }
                             //var cutAngle = 0;
-                            var items = Create2DPipeLine(line, layer, productDetails.ProductWidth,showWidth,dimStyle, cutAngle,true,docLineEntity.Length);
+                            var items = Create2DPipeLine(line, layer, productDetails.ProductWidth,showWidth,dimStyle, sCutAngle, eCutAngle, sAngleClockwise,eAngleClockwise, docLineEntity.Length);
 
                             //show dimensionValue 
                             var linearDimension = ShowLength(line, layer, productDetails.ProductWidth * 1.5, dimStyle);
@@ -349,22 +331,40 @@ namespace PipeWriter
 
                             entityObjectCollection.Add(line);
                         }
-                        var docArcEntity = productDetails.PartList.Arcs.FirstOrDefault(x => x.EntityID == sequenceItens[i]);
+                        var docArcEntity = productDetails.PartList.Arcs.FirstOrDefault(x => x.EntityID == sequenceItems[i]);
                         if (docArcEntity != null)
                         {
                             var arc = new Arc();
                             var isClockWise = false;
                             if (previousObject != null)
                                 if(previousObject.Type == EntityType.Arc)
-                                    isClockWise = productDetails.PartList.Arcs.FirstOrDefault(x => x.EntityID == sequenceItens[i - 1]).IsClockwise;
+                                    isClockWise = productDetails.PartList.Arcs.FirstOrDefault(x => x.EntityID == sequenceItems[i - 1]).IsClockwise;
                             arc = DrawAndAttachArc(previousObject,isClockWise, layer, docArcEntity.Angle, docArcEntity.Radius, docArcEntity.IsClockwise);
-                            //if (productDetails.startangle != 0 && i == 0)
-                            //    AddStartOrEnd(productDetails.startangle);
+                            double sAngle = 0;
+                            double eAngle = 0;
+                            bool sAngeleClockwise = false;
+                            bool eAngleClosewise = false;
                             bool showWidth = false;
                             if (i == 0)
                                 showWidth = true;
+                            else
+                                showWidth = false;
+                            if(i== 0 )
+                            {
+                                sAngle = productDetails.StartCutAngle;
+                                sAngeleClockwise = productDetails.StartAngleClockWise;
+                                eAngle = 0;
+                                eAngleClosewise = false;
+                            }
+                            else if(i == sequenceItems.Count -1)
+                            {
+                                sAngle = 0;
+                                sAngeleClockwise = false;
+                                eAngle = productDetails.EndCutAngle;
+                                eAngleClosewise = productDetails.EndAngleClockWise;
+                            }
                             var cutangle = showWidth == true ? 60 : 0;
-                            var items = Create2DPipeArc(arc, layer, previousObject, productDetails.ProductWidth, showWidth,dimStyle,isClockWise, cutangle, true);
+                            var items = Create2DPipeArc(arc, layer, previousObject, productDetails.ProductWidth, docArcEntity.IsClockwise, showWidth,dimStyle,sAngle, sAngeleClockwise, eAngle, eAngleClosewise);
 
                             //show dimensionValue
                             var radialDimension = ShowRadius(arc, layer, productDetails.ProductWidth * 0.75, dimStyle);
@@ -386,7 +386,6 @@ namespace PipeWriter
                         }
 
                     }
-
                     //drawScale(entityObjectCollection);
                     //draw customer label
                     var textCollection = AddText(entityObjectCollection,productDetails);
@@ -396,41 +395,111 @@ namespace PipeWriter
                     dxf.Save(Path.Combine(outputFilePath, string.Concat(fileName, ".dxf")));
                 }
             }
-
-
-
-
-
         }
-
-        private void AddTestControl(DxfDocument dxf)
+        public bool GenerateDXF(string originalDXFFileNamne, double originalStartX, double originalStartY, double originalEndX, double originalEndY, List<MergeContent> addedContents)
         {
-            Layer lyr = new Layer("Layer-1");
-            Line l = new Line();
-            l.StartPoint = new Vector3(-3, 0, 0);
-            l.EndPoint = new Vector3(3, 0, 0);
-            l.IsVisible = true;
-            l.Layer = lyr;
-            dxf.AddEntity(l);
+            try
+            {
+                var driveLocation = "E:\\krishna";
+                var originalStart = new Vector2(originalStartX, originalStartY);
+                var originalEnd = new Vector2(originalEndX, originalEndY);
+                var originalDXF = DxfDocument.Load(Path.Combine(driveLocation, originalDXFFileNamne));
+                foreach (var _list in addedContents)
+                {
+                    var point = new Vector2(_list.StartPointX, _list.StartPointY);
+                    var coordinateForDXF = GetPointForDXF(originalStart, originalEnd, Path.Combine(driveLocation, originalDXFFileNamne), point);
+                    var addedDXF = DxfDocument.Load(Path.Combine(driveLocation, _list.FileName));
 
+                    #region line
+                    foreach (var _dxfline in addedDXF.Lines)
+                    {
+                        _dxfline.StartPoint = new Vector3(_dxfline.StartPoint.X + coordinateForDXF.X, _dxfline.StartPoint.Y + coordinateForDXF.Y, 0);
+                        _dxfline.EndPoint = new Vector3(_dxfline.EndPoint.X + coordinateForDXF.X, _dxfline.EndPoint.Y + coordinateForDXF.Y, 0);
+                        var line = _dxfline.Clone() as Line;
+                        originalDXF.AddEntity(line);
+                    }
+                    foreach (var _dxfployline in addedDXF.LwPolylines)
+                    {
+                        foreach (var _vertices in _dxfployline.Vertexes)
+                        {
+                            _vertices.Position = new Vector2(_vertices.Position.X + coordinateForDXF.X, _vertices.Position.Y + coordinateForDXF.Y);
+                        }
+                        var polyline = _dxfployline.Clone() as LwPolyline;
+                        originalDXF.AddEntity(polyline);
+                    }
+                    foreach (var _dxfployline in addedDXF.Polylines)
+                    {
+                        foreach (var _vertices in _dxfployline.Vertexes)
+                        {
+                            _vertices.Position = new Vector3(_vertices.Position.X + coordinateForDXF.X, _vertices.Position.Y + coordinateForDXF.Y, 0);
+                        }
+                        var polyline = _dxfployline.Clone() as Polyline;
+                        originalDXF.AddEntity(polyline);
+                    }
+                    #endregion
+
+                    #region Arc
+                    foreach (var _dxfArc in addedDXF.Arcs)
+                    {
+                        //var point1 = new Vector2(_list.StartPointX, _list.StartPointY);
+                        //var coordinateForDXF1 = GetPointForDXF(originalStart, originalEnd, Path.Combine(driveLocation, originalDXFFileNamne), point);
+                        _dxfArc.Center = new Vector3(_dxfArc.Center.X + coordinateForDXF.X, _dxfArc.Center.Y + coordinateForDXF.Y, 0);
+                        var arc = _dxfArc.Clone() as Arc;
+                        originalDXF.AddEntity(arc);
+                    }
+                    #endregion
+
+                }
+                originalDXF.Save(Path.Combine(driveLocation, originalDXFFileNamne + "merged.dxf"));
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+            
+            
         }
 
-        private void RotateEntity(List<EntityObject> entityObjectCollection)
-        {
+        //public void GenerateDXF(string originalDXFFileNamne, double originalStartX, double originalStartY, double originalEndX, double originalEndY, string addedDXFFileName, double startPointX, double startPointY, double rotation)
+        //{
+        //    var driveLocation = "E:\\krishna";
+        //    var originalStart = new Vector2(originalStartX, originalStartY);
+        //    var originalEnd = new Vector2(originalEndX, originalEndY);
+        //    var point = new Vector2(startPointX, startPointY);
+        //    var coordinateForDXF = GetPointForDXF(originalStart, originalEnd, Path.Combine(driveLocation, originalDXFFileNamne), point);            
+        //    var addedDXF = DxfDocument.Load(Path.Combine(driveLocation, addedDXFFileName));
+        //    var originalDXF = DxfDocument.Load(Path.Combine(driveLocation, originalDXFFileNamne));            
+        //    foreach (var _dxfline in addedDXF.Lines)
+        //    {
+        //        _dxfline.StartPoint = new Vector3(_dxfline.StartPoint.X + coordinateForDXF.X, _dxfline.StartPoint.Y + coordinateForDXF.Y, 0);
+        //        _dxfline.EndPoint = new Vector3(_dxfline.EndPoint.X + coordinateForDXF.X, _dxfline.EndPoint.Y + coordinateForDXF.Y, 0);
+        //        var line = _dxfline.Clone() as Line;
+        //        originalDXF.AddEntity(line);
+        //    }
+        //    foreach (var _dxfployline in addedDXF.LwPolylines)
+        //    {
+        //        foreach(var _vertices in _dxfployline.Vertexes)
+        //        {
+        //            _vertices.Position = new Vector2(_vertices.Position.X + coordinateForDXF.X, _vertices.Position.Y + coordinateForDXF.Y);
+        //        }
+        //        var polyline = _dxfployline.Clone() as LwPolyline;
+        //        originalDXF.AddEntity(polyline);
+        //    }
+        //    foreach (var _dxfployline in addedDXF.Polylines)
+        //    {
+        //        foreach(var _vertices in _dxfployline.Vertexes)
+        //        {
+        //            _vertices.Position = new Vector3(_vertices.Position.X + coordinateForDXF.X, _vertices.Position.Y + coordinateForDXF.Y,0);
+        //        }
+        //        var polyline = _dxfployline.Clone() as Polyline;
+        //        originalDXF.AddEntity(polyline);
+        //    }
+        //    originalDXF.Save(Path.Combine(driveLocation, originalDXFFileNamne + "merged.dxf"));
 
-            //throw new NotImplementedException();
-            DxfDocument doc = DxfDocument.Load(@"E:\krishna\test1234.dxf");
-            var dimensions = doc.Dimensions;
-        }
-        public void RotateEntity()
-        {
-
-            //throw new NotImplementedException();
-            DxfDocument doc = DxfDocument.Load(@"E:\krishna\test1234.dxf");
-            var dimensions = doc.Viewport;
-        }
-
-
+        //}
+        
         /// <summary>
         /// Converts dxf file to different file format like svg, png, pdf, jpeg, etc.
         /// </summary>
@@ -453,9 +522,10 @@ namespace PipeWriter
             process.Start();
 
             process.WaitForExit();
+            
         }
 
-        public Vector2 GetPointForDXF(Vector2 originalstartA, Vector2 originalEndB, string originalDXF, Vector2 startpointC)
+        private Vector2 GetPointForDXF(Vector2 originalstartA, Vector2 originalEndB, string originalDXF, Vector2 startpointC)
         {
             //getTransformationMatraix();
             //Coordinate system of SVC start from top left corner.
@@ -479,9 +549,10 @@ namespace PipeWriter
             }
             //get length of all sides by creating triangle with dummy line we created with reference to startpointC
             //instead of getting square root get square value which is used to find angle
+            var ABsquare = ((originalstartA.X - originalEndB.X) * (originalstartA.X - originalEndB.X)) + ((originalstartA.Y - originalEndB.Y) * (originalstartA.Y - originalEndB.Y)); //Math.Sqrt(((originalstartA.X - originalEndB.X) * (originalstartA.X - originalEndB.X)) + ((originalstartA.Y - originalEndB.Y) * (originalstartA.Y - originalEndB.Y)));
             var ACsquare = ((originalstartA.X - startpointC.X) * (originalstartA.X - startpointC.X)) + ((originalstartA.Y - startpointC.Y) * (originalstartA.Y - startpointC.Y)); //Math.Sqrt(((originalstartA.X - startpointC.X) * (originalstartA.X - startpointC.X)) + ((originalstartA.Y - startpointC.Y) * (originalstartA.Y - startpointC.Y)));
             var BCsquare = ((originalEndB.X - startpointC.X) * (originalEndB.X - startpointC.X)) + ((originalEndB.Y - startpointC.Y) * (originalEndB.Y - startpointC.Y)); //Math.Sqrt(((originalEndB.X - startpointC.X) * (originalEndB.X - startpointC.X)) + ((originalEndB.Y - startpointC.Y) * (originalEndB.Y - startpointC.Y)));
-            var ABsquare = ((originalstartA.X - originalEndB.X) * (originalstartA.X - originalEndB.X)) + ((originalstartA.Y - originalEndB.Y) * (originalstartA.Y - originalEndB.Y)); //Math.Sqrt(((originalstartA.X - originalEndB.X) * (originalstartA.X - originalEndB.X)) + ((originalstartA.Y - originalEndB.Y) * (originalstartA.Y - originalEndB.Y)));
+            
             //Apply cosine rule for triangle law with ourDummy line to startPoint to calcuate relative point that need to be created for our original dxfFile.
             var anglea = Math.Acos(((ABsquare) + (ACsquare) - (BCsquare)) / (2 * Math.Sqrt(ABsquare) * Math.Sqrt(ACsquare))); //Math.Acos(((AC * AC) + (BC * BC) - (AB * AB)) / (2 * BC * AC)); 
             var angleb = Math.Acos(((ABsquare) + (BCsquare) - (ACsquare)) / (2 * Math.Sqrt(ABsquare) * Math.Sqrt(BCsquare)));
@@ -490,7 +561,7 @@ namespace PipeWriter
 
             //apply sine rule for triangle to find lenght of sides to triangle on original dxf.
             var startPointDXF = new Vector2(0, 0);
-            var endPointDXF = new Vector2(3, 0);
+            var endPointDXF = new Vector2(100, 0);
             var AB1 = Math.Sqrt(((startPointDXF.X - endPointDXF.X) * (startPointDXF.X - endPointDXF.X)) + ((startPointDXF.Y - endPointDXF.Y) * (startPointDXF.Y - endPointDXF.Y)));
             //var AB1 = Math.Sqrt(Math.Pow((startPointDXF.X - endPointDXF.X), 2) + Math.Pow((startPointDXF.Y - endPointDXF.Y), 2));
             
@@ -501,100 +572,32 @@ namespace PipeWriter
             //y1 = y0 + sin(angle) * length    -- in this case length is AC1
             if (quadrant == 1)
             {
-                PointInDxf.X = startPointDXF.X + (Math.Cos(anglec) * AC1);
-                PointInDxf.Y = startPointDXF.Y + (Math.Sin(anglec) * AC1);
+                PointInDxf.X = startPointDXF.X + (Math.Cos(anglea) * AC1);
+                PointInDxf.Y = startPointDXF.Y + (Math.Sin(anglea) * AC1);
             }
             else if (quadrant == 2)
             {
                 //PointInDxf.X = startPointDXF.X + (Math.Cos((anglec + 90) * Math.PI / 180) * AC1);
                 //PointInDxf.Y = startPointDXF.Y + (Math.Sin((anglec + 90) * Math.PI / 180) * AC1);
-                PointInDxf.X = startPointDXF.X + (Math.Cos((anglec + (Math.PI / 2d)) ) * AC1);
-                PointInDxf.Y = startPointDXF.Y + (Math.Sin((anglec + (Math.PI / 2d)) ) * AC1);
+                PointInDxf.X = startPointDXF.X + (Math.Cos((anglea + (Math.PI / 2d)) ) * AC1);
+                PointInDxf.Y = startPointDXF.Y + (Math.Sin((anglea + (Math.PI / 2d)) ) * AC1);
             }
             else if (quadrant == 3)
             {
                 //PointInDxf.X = startPointDXF.X + (Math.Cos((270 - anglec) * Math.PI / 180) * AC1);
                 //PointInDxf.Y = startPointDXF.Y + (Math.Sin((270 - anglec) * Math.PI / 180) * AC1);
-                PointInDxf.X = startPointDXF.X + (Math.Cos((3d * Math.PI / 2d) - anglec) * AC1);
-                PointInDxf.Y = startPointDXF.Y + (Math.Sin((3d * Math.PI / 2d) - anglec) * AC1);
+                PointInDxf.X = startPointDXF.X + (Math.Cos((3d * Math.PI / 2d) - anglea) * AC1);
+                PointInDxf.Y = startPointDXF.Y + (Math.Sin((3d * Math.PI / 2d) - anglea) * AC1);
             }
             else if (quadrant == 4)
             {
-                PointInDxf.X = startPointDXF.X + (Math.Cos((2d* Math.PI) - anglec) * AC1);
-                PointInDxf.Y = startPointDXF.Y + (Math.Sin((2d * Math.PI) - anglec) * AC1);
+                PointInDxf.X = startPointDXF.X + (Math.Cos((2d* Math.PI) - anglea) * AC1);
+                PointInDxf.Y = startPointDXF.Y + (Math.Sin((2d * Math.PI) - anglea) * AC1);
             }
             return PointInDxf;
         }
 
-        public void getTransformationMatraix()
-        {
-
-            
-
-
-
-
-            /*
-            //define 3X3 matrix
-            double a = 0, b=0, c=0, d=0, e=0, f=0;
-            var matrixT = DenseMatrix.OfArray(new double[,]
-            {
-                {a,b,c },
-                {d,e,f },
-                {0,0,1 }
-            });
-            //var matrixX = DenseMatrix.OfArray(new double[,]
-            //{
-            //    {1,2 },
-            //    {2,1 },
-            //    {3,0 }
-            //});
-            //var matrixD = DenseMatrix.OfArray(new double[,]
-            //{
-            //    {1,-2, },
-            //    {2,-3 },
-            //    {3,-4 }
-            //});
-            var matrixX = DenseMatrix.OfArray(new double[,]
-            {
-                {1,2 },
-                {2,1 }
-            });
-            var matrixD = DenseMatrix.OfArray(new double[,]
-            {
-                {1,2 },
-                {-2,-3 }
-            });
-            var res = matrixD * matrixX;
-            var test = res;
-            //var matrixX = DenseMatrix.OfArray(new double[,]
-            //{
-            //    {1},
-            //    {2 },
-            //    {1 }
-            //});
-            //var matrixT1 = DenseMatrix.OfArray(new double[,]
-            //{
-            //    {1,2,5},
-            //    {3,4,6 },
-            //    {0,0,1 }
-            //});
-            //var res = matrixT1 * matrixX;
-            //var test = res;
-            //var matrixT1 = matrixX.Transpose() * matrixD;
-            //var test = matrixT1;
-            //var matrixT = MathNet.Numerics.LinearAlgebra.Double.Matrix.Build.DenseOfArray({ { a,b,c },{ d,e,f },{ 0,0,1 } })
-
-            //var matrixT = DenseMatrix.OfArray(new double[,] {
-            //    {1,1,1,1},
-            //    {1,2,3,4},
-            //    {4,3,2,1}});
-
-            */
-
-        }
-
-        public List<EntityObject> AddText(List<EntityObject> list, Product productDetails)
+        private List<EntityObject> AddText(List<EntityObject> list, Product productDetails)
         {
             List<EntityObject> textList = new List<EntityObject>();
             double height;
@@ -616,7 +619,7 @@ namespace PipeWriter
 
         }
 
-        public void AddScale(string dxfFileLocation,int x,int y, int Unit)
+        private void AddScale(string dxfFileLocation,int x,int y, int Unit)
         {
             Vector3 centerPoint = new Vector3(x, y, 0);
             //DxfDocument doc = new DxfDocument();
@@ -676,84 +679,28 @@ namespace PipeWriter
 
         }
 
-        public void MergeDXFFiles(List<string> dxfDocFilePath)
-        {
-            DxfDocument doc = new DxfDocument();
-            foreach (var _dxfdocFile in dxfDocFilePath)
-            {
-                DxfDocument doc1 = DxfDocument.Load(_dxfdocFile);
-                foreach (var _docEntity in doc1.Lines)
-                {
-                    var _docEntity1 = _docEntity.Clone();
-                    var _docEntity11 = _docEntity1 as Line;
-                    doc.AddEntity(_docEntity11);
-                }
-                foreach(var _docEntity in doc1.Arcs)
-                {
-                    var _docEntity1 = _docEntity.Clone();
-                    var _docEntity11 = _docEntity1 as Arc;
-                    //var test = _docEntity11.PolygonalVertexes(100);
-                    doc.AddEntity(_docEntity11);
-                }
-                foreach (var _docEntity in doc1.LwPolylines)
-                {
-                    var _docEntity1 = _docEntity.Clone();
-                    var _docEntity11 = _docEntity1 as LwPolyline;
-                    doc.AddEntity(_docEntity11);
-                }
-                foreach (var _docEntity in doc1.Dimensions)
-                {
-                    var _docEntity1 = _docEntity.Clone();
-                    var _docEntity11 = _docEntity1 as Dimension;
-                    doc.AddEntity(_docEntity11);
-                }                
-                foreach (var _docEntity in doc1.Polylines)
-                {
-                    var _docEntity1 = _docEntity.Clone();
-                    var _docEntity11 = _docEntity1 as Polyline;
-                    doc.AddEntity(_docEntity11);
-                }
-                foreach (var _docEntity in doc1.Texts)
-                {
-                    var _docEntity1 = _docEntity.Clone();
-                    var _docEntity11 = _docEntity1 as Text;
-                    doc.AddEntity(_docEntity11);
-                }
-                foreach (var _docEntity in doc1.Viewports)
-                {
-                    var _docEntity1 = _docEntity.Clone();
-                    var _docEntity11 = _docEntity1 as Viewport;
-                    doc.AddEntity(_docEntity11);
-                }
-            }
-            doc.Save(@"E:\krishna\mergeTest1.dxf");
-        }
-
-        public List<EntityObject> Create2DPipeLine(Line lineEntity, Layer layer, double width, bool showWidth, DimensionStyle dimStyle, double cutAngle, bool isCutAngleClockWise, double length)
+        public List<EntityObject> Create2DPipeLine(Line lineEntity, Layer layer, double width, bool showWidth, DimensionStyle dimStyle, double startCutAngle, double endCutAngle, bool startAngelClockWise, bool endAngelClockWise, double length)
         {
             List<EntityObject> objectCollection = new List<EntityObject>();
-            //Line line1 = new Line();
-            //Line line2 = new Line();
-
-            //line1.Linetype = Linetype.Continuous;
-            //line2.Linetype = Linetype.Continuous;
-
-           
-            //var endPointOffset1 = lineEntity.EndPoint;
-            //var endPointOffset2 = lineEntity.EndPoint;
-
-            if (cutAngle != 0)
+            if (startCutAngle != 0 || endCutAngle != 0)
             {
                 var startorEndOffset1 = lineEntity.StartPoint;
                 var startorEndOffset2 = lineEntity.StartPoint;
                 var A = (width / 2);
-                var extendedLength = A * Math.Tan(cutAngle * (Math.PI / 180));
-                if (isCutAngleClockWise && showWidth)
+                var extendedLength = A * Math.Tan(startCutAngle * (Math.PI / 180));               
+                
+                if (startCutAngle != 0)
                 {
-                    startorEndOffset1 = Coordinate.CalculateLineEndPoint(lineEntity.EndPoint, lineEntity.StartPoint, -extendedLength);
-                    //endPointOffset1 = Coordinate.CalculateLineEndPoint(lineEntity.StartPoint, lineEntity.EndPoint, extendedLength);
-                    startorEndOffset2 = Coordinate.CalculateLineEndPoint(lineEntity.EndPoint, lineEntity.StartPoint, extendedLength);
-                    //endPointOffset2 = Coordinate.CalculateLineEndPoint(lineEntity.StartPoint, lineEntity.EndPoint, -extendedLength);
+                    if(startAngelClockWise)
+                    {
+                        startorEndOffset1 = Coordinate.CalculateLineEndPoint(lineEntity.EndPoint, lineEntity.StartPoint, -extendedLength);
+                        startorEndOffset2 = Coordinate.CalculateLineEndPoint(lineEntity.EndPoint, lineEntity.StartPoint, extendedLength);
+                    }
+                    else
+                    {
+                        startorEndOffset1 = Coordinate.CalculateLineEndPoint(lineEntity.EndPoint, lineEntity.StartPoint, extendedLength);
+                        startorEndOffset2 = Coordinate.CalculateLineEndPoint(lineEntity.EndPoint, lineEntity.StartPoint, -extendedLength);
+                    }
                     var lwPolyLine1 = new LwPolyline
                     {
                         Vertexes =
@@ -794,26 +741,69 @@ namespace PipeWriter
                     objectCollection.Add(endline1);
                     objectCollection.Add(endLine2);
 
+
+                    //show width dimension here
+
+
+
+
+
                 }
-                else
+                else if(endCutAngle != 0)
                 {
-                    //startPointOffset1 = Coordinate.CalculateLineEndPoint(lineEntity.EndPoint, lineEntity.StartPoint, extendedLength);
-                    //endPointOffset1 = Coordinate.CalculateLineEndPoint(lineEntity.StartPoint, lineEntity.EndPoint, -extendedLength);
-                    //startPointOffset2 = Coordinate.CalculateLineEndPoint(lineEntity.EndPoint, lineEntity.StartPoint, -extendedLength);
-                    //endPointOffset2 = Coordinate.CalculateLineEndPoint(lineEntity.StartPoint, lineEntity.EndPoint, extendedLength);
+                    if (endAngelClockWise)
+                    {
+                        startorEndOffset1 = Coordinate.CalculateLineEndPoint(lineEntity.StartPoint, lineEntity.EndPoint, extendedLength);
+                        startorEndOffset2 = Coordinate.CalculateLineEndPoint(lineEntity.StartPoint, lineEntity.EndPoint, -extendedLength);
+                    }
+                    else
+                    {
+                        startorEndOffset1 = Coordinate.CalculateLineEndPoint(lineEntity.StartPoint, lineEntity.EndPoint, -extendedLength);
+                        startorEndOffset2 = Coordinate.CalculateLineEndPoint(lineEntity.StartPoint, lineEntity.EndPoint, extendedLength);
+                    }
+                    var lwPolyLine1 = new LwPolyline
+                    {
+                        Vertexes =
+                        {
+                            new LwPolylineVertex(startorEndOffset1.X, startorEndOffset1.Y),
+                            new LwPolylineVertex(lineEntity.EndPoint.X, lineEntity.EndPoint.Y)
+                        }
+                    };
+                    var lwPolyLine2 = new LwPolyline
+                    {
+                        Vertexes =
+                        {
+                            new LwPolylineVertex(startorEndOffset2.X, startorEndOffset2.Y),
+                            new LwPolylineVertex(lineEntity.EndPoint.X, lineEntity.EndPoint.Y)
+                        }
+                    };
+                    var offset1 = lwPolyLine1.GetOffsetCurves(-width / 2);
+                    var offset2 = lwPolyLine2.GetOffsetCurves(width / 2);
+
+                    var endline1 = new Line(
+                    new Vector2(offset1.Vertexes[0].Position.X, offset1.Vertexes[0].Position.Y),
+                    new Vector2(offset2.Vertexes[0].Position.X, offset2.Vertexes[0].Position.Y));
+                    var endLine2 = new Line(
+                        new Vector2(offset1.Vertexes[1].Position.X, offset1.Vertexes[1].Position.Y),
+                        new Vector2(offset2.Vertexes[1].Position.X, offset2.Vertexes[1].Position.Y));
+
+                    offset1.Layer = layer;
+                    offset2.Layer = layer;
+                    endline1.Layer = layer;
+                    endLine2.Layer = layer;
+
+                    offset1.Color = AciColor.Blue;
+                    offset2.Color = AciColor.Blue;
+                    endline1.Color = AciColor.Blue;
+                    endLine2.Color = AciColor.Blue;
+                    objectCollection.Add(offset1);
+                    objectCollection.Add(offset2);
+                    objectCollection.Add(endline1);
+                    objectCollection.Add(endLine2);
                 }
-                
-                //lwPolyLine1.
-
-                //var offset1 = lwPolyLine1.GetOffsetCurves(-width / 2);
-                //var offset2 = lwPolyLine2.GetOffsetCurves(width / 2);
-                //line1.StartPoint = new Vector3(offset1.Vertexes[0].Position.X, offset1.Vertexes[0].Position.Y, 0);
-                //line1.EndPoint = new Vector3(offset2.Vertexes[0].Position.X, offset2.Vertexes[0].Position.Y, 0);
-
-                //line2.StartPoint = new Vector3(offset1.Vertexes[1].Position.X, offset1.Vertexes[1].Position.Y, 0);
-                //line2.EndPoint = new Vector3(offset2.Vertexes[1].Position.X, offset2.Vertexes[1].Position.Y, 0);
 
             }
+
             else
             {
                 var lwPolyLine = new LwPolyline
@@ -858,7 +848,7 @@ namespace PipeWriter
             return objectCollection;
         }
 
-        public List<EntityObject> Create2DPipeArc(Arc arcEntity, Layer layer, EntityObject previousObject, double width,bool showWidth, DimensionStyle dimStyle,bool isClockWise, double CutAngle, bool isCutAngleClockwise)
+        public List<EntityObject> Create2DPipeArc(Arc arcEntity, Layer layer, EntityObject previousObject, double width, bool isArcAngleClockwise, bool showWidth, DimensionStyle dimStyle, double startAngle,bool sAngleClockwise, double endAngle, bool eAngleClockwise)
         {
             List<EntityObject> objectCollection = new List<EntityObject>();
             var Offset1StartAngle = arcEntity.StartAngle;
@@ -884,86 +874,77 @@ namespace PipeWriter
                 Radius = arcEntity.Radius - width / 2
             };
 
-            if (CutAngle != 0 && showWidth)
+            if (startAngle != 0 || endAngle != 0)
             {
                 //calculate length of cord C^2 = A^2 + B^2 -2abCos(c) where c is angle 
-                var A = (width / 2);
-
-                //var lengthofcord = Math.Sqrt((A * A) + (A * A) - (2 * A * A * Math.Cos(CutAngle * (Math.PI / 180))));
-                var lengthofcord = Math.Sqrt(Math.Pow(A,2) + Math.Pow(A,2) - (2 * A * A * Math.Cos(CutAngle * (Math.PI / 180))));
-
-                var RadianDegree =Math.Acos(((offset1.Radius * offset1.Radius) + (offset1.Radius* offset1.Radius) - (lengthofcord * lengthofcord)) / (2 * offset1.Radius * offset1.Radius));
-                var degreeAngle = RadianDegree * (180 / Math.PI);
-                if(isCutAngleClockwise)
+                var A = (width / 2);                
+                if (startAngle != 0)
                 {
-                    offset1.StartAngle = offset1.StartAngle - degreeAngle;
-                    offset2.StartAngle = offset2.StartAngle + degreeAngle;
+                    //let suport centerpoint of main arc is A Center of arc that is middle arc is point B and arc intersection point is C.
+                    //than we know some sides and some angles for Triangle ABC.
+                    //we can use sine rule of triangle to fine angle c.
+
+                    //sina/a = sinb/b == sinc/c
+                    if(sAngleClockwise)
+                    {
+                        //for offset 2
+                        var sineAngleC = (Math.Sin(startAngle * (Math.PI / 180)) * (offset2.Radius + A)) / (offset2.Radius);
+                        var anglec = Math.Asin(sineAngleC);
+                        anglec = 180 - ((180/Math.PI) * anglec);
+                        var anglea = 180 - anglec - startAngle;
+                        offset2.StartAngle = offset2.StartAngle + anglea;
+
+                        //for offset1 
+                        offset1.StartAngle = offset1.StartAngle - anglea;
+
+                    }
+                    else
+                    {
+                        var sineAngleC = (Math.Sin(startAngle * (Math.PI / 180)) * (offset2.Radius + (width / 2))) / (offset2.Radius);
+                        var anglec = Math.Asin(sineAngleC);
+                        anglec = 180 - ((180 / Math.PI) * anglec);
+                        var anglea = 180 - anglec - startAngle;
+                        offset2.StartAngle = offset2.StartAngle - anglea;
+                        //for offset1 
+                        offset1.StartAngle = offset1.StartAngle + anglea;
+
+                    }   
                 }
                 else
                 {
-                    offset1.StartAngle = offset1.StartAngle + degreeAngle;
-                    offset2.StartAngle = offset2.StartAngle - degreeAngle;
                 }
+ 
+
+                //var startPoint = arcEntity.GetVertexesOfArc(isPreviousArcClockWise)[1];
+                //var endPoint = Coordinate.CalculateLineEndPoint(prevArcObj.Center, startPoint,
+                //                length, isPreviousArcClockWise);
+                //line.StartPoint = startPoint;
+                //line.EndPoint = endPoint;
+
+                //var Center = 
+
+                //var getAngles1 = Coordinate.GetArcAngles() 
 
 
 
-                #region previous logic
-                /*
-                
-                //get center point inside of pipe for cut angle
-                var Vertexes = arcEntity.GetVertexesOfArc(isClockWise);
-                if (previousObject == null)
-                {
-                    //draw arc taking center as pipe center with cut angle
-                    var centerPoint = Vertexes[0]; //start point will be the start point for cut edge.
-                    var startPoint = offset1.GetVertexesOfArc(isClockWise)[1];
-                    var angles = Coordinate.GetArcAngles(startPoint, centerPoint, width / 2, CutAngle, isCutAngleClockwise);
-                    var arc1 = new Arc();
-                    arc1.StartAngle = arcEntity.StartAngle;
-                    arc1.EndAngle = angles[1];
-                    arc1.Radius = width / 2;
-                    arc1.Center = centerPoint;
 
 
-                    Vector3 contactPoint;
-                    var center = Coordinate.CalculateArcCenter(arc1, isCutAngleClockwise, arc1.Radius,
-                        isCutAngleClockwise, out contactPoint);
-                    var angles1 = Coordinate.GetArcAngles(contactPoint, center, arc1.Radius,
-                        CutAngle, isCutAngleClockwise);
+                //var CutAngle = startAngle == 0 ? endAngle : startAngle;
+                ////var lengthofcord = Math.Sqrt((A * A) + (A * A) - (2 * A * A * Math.Cos(CutAngle * (Math.PI / 180))));
+                //var lengthofcord = Math.Sqrt(Math.Pow(A,2) + Math.Pow(A,2) - (2 * A * A * Math.Cos(CutAngle * (Math.PI / 180))));
 
-                    ////get  angle of arc1 from endpoint of arc1 which will be actual start angle for offset with reference of center of offset1
-                    //var arc1Points = arc1.GetVertexesOfArc(isCutAngleClockwise); 
-                    //var endpoint = Coordinate.CalculateLineEndPoint(arc1.Center, startPoint,
-                    //            line.Length, preArc.IsClockwise);
-
-                    //offset1.StartAngle = angles[0];
-                }
-                else
-                {
-                    //draw arc taking center as pipe center with cut angle
-                    var centerPoint = Vertexes[1]; //end point will be the start point for cut edge1.
-                    var startPoint = offset1.GetVertexesOfArc(isClockWise)[1];
-                    var angles = Coordinate.GetArcAngles(startPoint, centerPoint, width / 2, CutAngle, isCutAngleClockwise);
-                    var arc1 = new Arc();
-                    arc1.StartAngle = arcEntity.StartAngle;
-                    arc1.EndAngle = angles[1];
-                    arc1.Radius = width / 2;
-                    arc1.Center = centerPoint;
-
-
-                    Vector3 contactPoint;
-                    var center = Coordinate.CalculateArcCenter(arc1, isCutAngleClockwise, arc1.Radius,
-                        isCutAngleClockwise, out contactPoint);
-                    var angles1 = Coordinate.GetArcAngles(contactPoint, center, arc1.Radius,
-                        CutAngle, isCutAngleClockwise);
-                    //offset1.StartAngle = angles[0];
-
-                }
-
-                //var angles = Coordinate.GetArcAngles(arcEntity.)
-                
-                */
-                #endregion
+                //var RadianDegree =Math.Acos(((offset1.Radius * offset1.Radius) + (offset1.Radius* offset1.Radius) - (lengthofcord * lengthofcord)) / (2 * offset1.Radius * offset1.Radius));
+                //var degreeAngle = RadianDegree * (180 / Math.PI);
+                //if(isCutAngleClockwise)
+                //{
+                //    offset1.StartAngle = offset1.StartAngle - degreeAngle;
+                //    offset2.StartAngle = offset2.StartAngle + degreeAngle;
+                //}
+                //else
+                //{
+                //    offset1.StartAngle = offset1.StartAngle + degreeAngle;
+                //    offset2.StartAngle = offset2.StartAngle - degreeAngle;
+                //}
 
             }
             var verticesOffset1 = offset1.GetVertexesOfArc();
@@ -987,9 +968,9 @@ namespace PipeWriter
             objectCollection.Add(endLine1);
             objectCollection.Add(endLine2);
 
-            if(showWidth)
+            if (showWidth)
             {
-                var shownWidth = ShowWidth(endLine1,layer,dimStyle, width * 0.75);
+                var shownWidth = ShowWidth(endLine1, layer, dimStyle, width * 0.75);
                 objectCollection.Add(shownWidth);
             }
             return objectCollection;
@@ -1014,12 +995,12 @@ namespace PipeWriter
             return WDimension;
         }
 
-        public Layer AddLayer(string layerName)
+        private Layer AddLayer(string layerName)
         {
             Layer layer = new Layer(layerName);
             return layer;
         }
-        public LinearDimension ShowLength(Line lineEntity, Layer layer, double offset, DimensionStyle dimStyle)
+        private LinearDimension ShowLength(Line lineEntity, Layer layer, double offset, DimensionStyle dimStyle)
         {
             var dimension = new LinearDimension();
 
@@ -1037,7 +1018,7 @@ namespace PipeWriter
             return dimension;
         }
 
-        public RadialDimension ShowRadius(Arc arcEntity, Layer layer, double offset, DimensionStyle dimStyle)
+        private RadialDimension ShowRadius(Arc arcEntity, Layer layer, double offset, DimensionStyle dimStyle)
         {
             var startAngle = arcEntity.StartAngle > arcEntity.EndAngle
                       ? arcEntity.StartAngle - 360
@@ -1057,7 +1038,7 @@ namespace PipeWriter
             return dimension;
         }
 
-        public Line DrawAndAttachLine(EntityObject previousEntityObj,bool isPreviousArcClockWise, double length, double width, Layer layer)
+        private Line DrawAndAttachLine(EntityObject previousEntityObj,bool isPreviousArcClockWise, double length, double width, Layer layer)
         {
             Line line = new Line();
             line.Linetype = Linetype.Dashed;
@@ -1087,7 +1068,7 @@ namespace PipeWriter
             return line;
         }
 
-        public Arc DrawAndAttachArc(EntityObject previousEntityObj,bool isPrevArcClockWise, Layer layer, double angle, double radius, bool isClockWise)
+        private Arc DrawAndAttachArc(EntityObject previousEntityObj,bool isPrevArcClockWise, Layer layer, double angle, double radius, bool isClockWise)
         {
             Arc arc = new Arc();
             arc.Linetype = Linetype.Dashed;
@@ -1134,18 +1115,8 @@ namespace PipeWriter
             }
             return arc;
         }
-
-        public void DrawPipe()
-        {
-
-        }
-
-        public void AddCustomerDetail()
-        {
-
-        }
-
-        public bool Validate(Product prod, string fileName)
+        
+        private bool Validate(Product prod, string fileName)
         {
             //validate wrong input
             var worngInputs = prod.PartList.Arcs.Where(x => x.Radius <= prod.ProductWidth / 2).ToList();
@@ -1162,12 +1133,7 @@ namespace PipeWriter
             return true;
         }
 
-        public void AddStartOrEnd(double angle)
-        {
-
-        }
-
-        public List<int> GetItemsSequence(Product prod, string fileName)
+        private List<int> GetItemsSequence(Product prod, string fileName)
         {
             List<int> sequence = new List<int>();
             foreach (var _productItem in prod.PartList.Lines.OrderBy(x => x.EntityID))
