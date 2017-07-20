@@ -435,7 +435,7 @@ namespace PipeWriter
                         }
                         var polyline = _dxfployline.Clone() as Polyline;
                         originalDXF.AddEntity(polyline);
-                    }
+                    } 
                     #endregion
 
                     #region Arc
@@ -529,9 +529,10 @@ namespace PipeWriter
         {
             //getTransformationMatraix();
             //Coordinate system of SVC start from top left corner.
+
             var quadrant = 0;
 
-            if(startpointC.X >= originalstartA.X && startpointC.Y <= originalstartA.Y)
+            if (startpointC.X >= originalstartA.X && startpointC.Y <= originalstartA.Y)
             {
                 quadrant = 1;
             }
@@ -570,30 +571,39 @@ namespace PipeWriter
             var PointInDxf = new Vector2(0, 0);
             //x1 = x0 + cos(angle) * length    -- in this case length is AC1
             //y1 = y0 + sin(angle) * length    -- in this case length is AC1
-            if (quadrant == 1)
+
+            //PointInDxf.X = startPointDXF.X + (Math.Cos(anglea) * AC1);
+            //PointInDxf.Y = startPointDXF.Y + (Math.Sin(anglea) * AC1);
+            if(quadrant == 3 || quadrant == 4 && (anglea * 180/Math.PI) < 180 )
             {
-                PointInDxf.X = startPointDXF.X + (Math.Cos(anglea) * AC1);
-                PointInDxf.Y = startPointDXF.Y + (Math.Sin(anglea) * AC1);
+                anglea = (2d * Math.PI) - anglea;
             }
-            else if (quadrant == 2)
-            {
-                //PointInDxf.X = startPointDXF.X + (Math.Cos((anglec + 90) * Math.PI / 180) * AC1);
-                //PointInDxf.Y = startPointDXF.Y + (Math.Sin((anglec + 90) * Math.PI / 180) * AC1);
-                PointInDxf.X = startPointDXF.X + (Math.Cos((anglea + (Math.PI / 2d)) ) * AC1);
-                PointInDxf.Y = startPointDXF.Y + (Math.Sin((anglea + (Math.PI / 2d)) ) * AC1);
-            }
-            else if (quadrant == 3)
-            {
-                //PointInDxf.X = startPointDXF.X + (Math.Cos((270 - anglec) * Math.PI / 180) * AC1);
-                //PointInDxf.Y = startPointDXF.Y + (Math.Sin((270 - anglec) * Math.PI / 180) * AC1);
-                PointInDxf.X = startPointDXF.X + (Math.Cos((3d * Math.PI / 2d) - anglea) * AC1);
-                PointInDxf.Y = startPointDXF.Y + (Math.Sin((3d * Math.PI / 2d) - anglea) * AC1);
-            }
-            else if (quadrant == 4)
-            {
-                PointInDxf.X = startPointDXF.X + (Math.Cos((2d* Math.PI) - anglea) * AC1);
-                PointInDxf.Y = startPointDXF.Y + (Math.Sin((2d * Math.PI) - anglea) * AC1);
-            }
+            PointInDxf.X = startPointDXF.X + (Math.Cos(anglea) * AC1);
+            PointInDxf.Y = startPointDXF.Y + (Math.Sin(anglea) * AC1);
+            //if (quadrant == 1)
+            //{
+            //    PointInDxf.X = startPointDXF.X + (Math.Cos(anglea) * AC1);
+            //    PointInDxf.Y = startPointDXF.Y + (Math.Sin(anglea) * AC1);
+            //}
+            //else if (quadrant == 2)
+            //{
+            //    //PointInDxf.X = startPointDXF.X + (Math.Cos((anglec + 90) * Math.PI / 180) * AC1);
+            //    //PointInDxf.Y = startPointDXF.Y + (Math.Sin((anglec + 90) * Math.PI / 180) * AC1);
+            //    PointInDxf.X = startPointDXF.X + (Math.Cos((anglea + (Math.PI / 2d))) * AC1);
+            //    PointInDxf.Y = startPointDXF.Y + (Math.Sin((anglea + (Math.PI / 2d))) * AC1);
+            //}
+            //else if (quadrant == 3)
+            //{
+            //    //PointInDxf.X = startPointDXF.X + (Math.Cos((270 - anglec) * Math.PI / 180) * AC1);
+            //    //PointInDxf.Y = startPointDXF.Y + (Math.Sin((270 - anglec) * Math.PI / 180) * AC1);
+            //    PointInDxf.X = startPointDXF.X + (Math.Cos((3d * Math.PI / 2d) - anglea) * AC1);
+            //    PointInDxf.Y = startPointDXF.Y + (Math.Sin((3d * Math.PI / 2d) - anglea) * AC1);
+            //}
+            //else if (quadrant == 4)
+            //{
+            //    PointInDxf.X = startPointDXF.X + (Math.Cos((2d * Math.PI) - anglea) * AC1);
+            //    PointInDxf.Y = startPointDXF.Y + (Math.Sin((2d * Math.PI) - anglea) * AC1);
+            //}
             return PointInDxf;
         }
 
@@ -912,39 +922,37 @@ namespace PipeWriter
                 }
                 else
                 {
-                }
- 
+                    //let suport centerpoint of main arc is A Center of arc that is middle arc is point B and arc intersection point is C.
+                    //than we know some sides and some angles for Triangle ABC.
+                    //we can use sine rule of triangle to fine angle c.
 
-                //var startPoint = arcEntity.GetVertexesOfArc(isPreviousArcClockWise)[1];
-                //var endPoint = Coordinate.CalculateLineEndPoint(prevArcObj.Center, startPoint,
-                //                length, isPreviousArcClockWise);
-                //line.StartPoint = startPoint;
-                //line.EndPoint = endPoint;
+                    //sina/a = sinb/b == sinc/c
+                    if (eAngleClockwise)
+                    {
+                        //for offset 2
+                        var sineAngleC = (Math.Sin(endAngle * (Math.PI / 180)) * (offset2.Radius + A)) / (offset2.Radius);
+                        var anglec = Math.Asin(sineAngleC);
+                        anglec = 180 - ((180 / Math.PI) * anglec);
+                        var anglea = 180 - anglec - startAngle;
+                        offset2.EndAngle = offset2.EndAngle + anglea;
 
-                //var Center = 
+                        //for offset1 
+                        offset1.EndAngle = offset1.EndAngle - anglea;
 
-                //var getAngles1 = Coordinate.GetArcAngles() 
+                    }
+                    else
+                    {
+                        //for offset 2
+                        var sineAngleC = (Math.Sin(endAngle * (Math.PI / 180)) * (offset2.Radius + A)) / (offset2.Radius);
+                        var anglec = Math.Asin(sineAngleC);
+                        anglec = 180 - ((180 / Math.PI) * anglec);
+                        var anglea = 180 - anglec - startAngle;
+                        offset2.EndAngle = offset2.EndAngle - anglea;
 
-
-
-
-
-                //var CutAngle = startAngle == 0 ? endAngle : startAngle;
-                ////var lengthofcord = Math.Sqrt((A * A) + (A * A) - (2 * A * A * Math.Cos(CutAngle * (Math.PI / 180))));
-                //var lengthofcord = Math.Sqrt(Math.Pow(A,2) + Math.Pow(A,2) - (2 * A * A * Math.Cos(CutAngle * (Math.PI / 180))));
-
-                //var RadianDegree =Math.Acos(((offset1.Radius * offset1.Radius) + (offset1.Radius* offset1.Radius) - (lengthofcord * lengthofcord)) / (2 * offset1.Radius * offset1.Radius));
-                //var degreeAngle = RadianDegree * (180 / Math.PI);
-                //if(isCutAngleClockwise)
-                //{
-                //    offset1.StartAngle = offset1.StartAngle - degreeAngle;
-                //    offset2.StartAngle = offset2.StartAngle + degreeAngle;
-                //}
-                //else
-                //{
-                //    offset1.StartAngle = offset1.StartAngle + degreeAngle;
-                //    offset2.StartAngle = offset2.StartAngle - degreeAngle;
-                //}
+                        //for offset1 
+                        offset1.EndAngle = offset1.EndAngle - anglea;
+                    }
+                } 
 
             }
             var verticesOffset1 = offset1.GetVertexesOfArc();
