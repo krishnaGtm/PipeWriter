@@ -75,8 +75,8 @@ namespace PipeWriterDesktop
                     p = (Product)(serializer.Deserialize(reader));
                 }
                 var x = p;
-                DxfFile service = new DxfFile();
-                service.GenerateDXF(p, "testtest1", "E:\\krishna");
+                //DxfFile service = new DxfFile();
+                DxfFile.GenerateDXF(p, "newProd.dxf", "E:\\krishna");
                 //service.GenerateDXFBLocks(p,"test8", "E:\\krishna");
             }
             
@@ -162,22 +162,22 @@ namespace PipeWriterDesktop
             //DxfFile file = new DxfFile();
             //file.RotateEntity();
             //E:\Proj\PipeWriter\acmecad
-            DxfDocument doc = DxfDocument.Load(@"E:\krishna\testtest.dxf");
-            netDxf.Entities.Line l = new netDxf.Entities.Line();
-            l.StartPoint = new Vector3(0, 0, 0);
-            l.EndPoint = new Vector3(100, 0, 0);
-            l.Color = new AciColor(Color.Ivory); //AciColor.Default;
+            //DxfDocument doc = DxfDocument.Load(@"E:\krishna\Line3.dxf");
+            //netDxf.Entities.Line l = new netDxf.Entities.Line();
+            //l.StartPoint = new Vector3(0, 0, 0);
+            //l.EndPoint = new Vector3(100, 0, 0);
+            //l.Color = new AciColor(Color.Ivory); //AciColor.Default;
             
-            ////l.XData.Add(new XData(new netDxf.Tables.ApplicationRegistry("testKrishna")));
+            //////l.XData.Add(new XData(new netDxf.Tables.ApplicationRegistry("testKrishna")));
  
-            ////netDxf.Tables.Layer layer = new netDxf.Tables.Layer("Layer-1");
-            ////l.Layer = layer;
-            doc.AddEntity(l);
-            doc.Save(@"E:\krishna\testtest.dxf");
+            //////netDxf.Tables.Layer layer = new netDxf.Tables.Layer("Layer-1");
+            //////l.Layer = layer;
+            //doc.AddEntity(l);
+            //doc.Save(@"E:\krishna\testtest.dxf");
             //DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\test1.dxf", FileFormat.SVG);
-            DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\testtest.dxf", FileFormat.SVG);
-            doc.RemoveEntity(l);
-            doc.Save(@"E:\krishna\testtest.dxf");
+            DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\newProd.dxf", FileFormat.SVG);
+            //doc.RemoveEntity(l);
+            //doc.Save(@"E:\krishna\testtest.dxf");
         }
     }
 }
