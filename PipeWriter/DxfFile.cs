@@ -295,6 +295,7 @@ namespace PipeWriter
                                 isClockwise = false;
                             var vertices = Coordinate.GetVertexesOfArc(_dxfArc, isClockwise);
                             var startPoint = vertices[0];
+
                             var startPoint1 = new Vector3(startPoint.X + coordinateForDXF.X, startPoint.Y + coordinateForDXF.Y, 0);
                             var sofArcX = (Math.Cos(rotationAngle) * (startPoint1.X - centerOfRotation.X)) - (Math.Sin(rotationAngle) * (startPoint1.Y - centerOfRotation.Y)) + centerOfRotation.X;
                             var sofArcY = (Math.Sin(rotationAngle) * (startPoint1.X - centerOfRotation.X)) + (Math.Cos(rotationAngle) * (startPoint1.Y - centerOfRotation.Y)) + centerOfRotation.Y;
