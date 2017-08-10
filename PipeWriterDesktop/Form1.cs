@@ -175,7 +175,7 @@ namespace PipeWriterDesktop
             //doc.AddEntity(l);
             //doc.Save(@"E:\krishna\testtest.dxf");
             //DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\test1.dxf", FileFormat.SVG);
-            DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\newProd.dxf", FileFormat.SVG);
+            DxfFile.Convert(@"E:\Proj\PipeWriter\acmecad\AcmeCADConverter.exe", @"E:\krishna\Product test.dxf", FileFormat.SVG, @"E:\krishna\SVGS");
             //doc.RemoveEntity(l);
             //doc.Save(@"E:\krishna\testtest.dxf");
         }

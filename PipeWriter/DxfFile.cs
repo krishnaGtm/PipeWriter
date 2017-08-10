@@ -641,7 +641,7 @@ namespace PipeWriter
         /// <remarks>
         /// If the file with same name and same format already exists it will be replaced.
         /// </remarks>
-        public static bool Convert(string programPath, string dxfFilePath, FileFormat outPutFileFormat)
+        public static bool Convert(string programPath, string dxfFilePath, FileFormat outPutFileFormat,string destinationPath)
         {
             DxfDocument dxfDoc = new DxfDocument();
             Line l = new Line();
@@ -658,14 +658,25 @@ namespace PipeWriter
                 ProcessStartInfo startInfo = new ProcessStartInfo();
 
                 process.StartInfo.FileName = programPath;
+                var filePathquoted = @"""" + dxfFilePath + @"""";
+                //var destinationpathquoted = @"""" + destinationPath + @"""";
+                var filename = Path.GetFileNameWithoutExtension(dxfFilePath);
+                var destinationfilename = destinationPath + "\\" + filename;
+                var destinationfileQuoted = @"""" + destinationfilename + @"""";              
+                var args = "/r /ls  /p 3 /ad /b 7 /a -1 /o " + destinationfileQuoted + " /f " + (int)outPutFileFormat + " " + filePathquoted + "";
+                //var args = @"/r /ls  /p 3 /ad /b 7 /a -2 /f " + (int)outPutFileFormat + " " + filePathquoted + "";
                 //process.StartInfo.Arguments = @"/r /p 3 /ad /b 7 /a -2 /f " + (int)outPutFileFormat + " " + dxfFilePath + "";
-                process.StartInfo.Arguments = @"/r /ls  /p 3 /ad /b 7 /a -2 /f " + (int)outPutFileFormat + " " + dxfFilePath + "";
+                //process.StartInfo.Arguments = @"/r /ls  /p 3 /ad /b 7 /a -2 /d /f " + (int)outPutFileFormat + " " + dxfFilePath + "";
+                process.StartInfo.Arguments = args;
 
                 process.Start();
 
                 process.WaitForExit();
                 dxfDoc.RemoveEntity(l);
                 dxfDoc.Save(dxfFilePath);
+                
+
+
             }
             catch
             {
